@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HızlıOkuma - Sorunsuz PDF Okuma</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PDF.js kütüphanesi -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+            --warning: #f72585;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            transition: var(--transition);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            position: relative;
+        }
+
+        /* Giriş Modal Stilleri */
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-container {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 90%;
+            max-width: 450px;
+            padding: 30px;
+            position: relative;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .auth-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+        }
+
+        .auth-tab.active {
+            border-bottom: 3px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .auth-btn:hover {
+            background-color: var(--secondary);
+        }
+
+        .auth-footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .auth-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .close-auth {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #777;
+        }
+
+        /* Kullanıcı Bilgisi */
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .user-menu {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background: white;
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+            padding: 10px 0;
+            width: 150px;
+            z-index: 100;
+        }
+
+        .user-menu.active {
+            display: block;
+        }
+
+        .user-menu-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .user-menu-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* İlerleme İstatistikleri */
+        .stats-panel {
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            min-width: 120px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        /* Gelişmiş Ayarlar Paneli */
+        .advanced-settings {
+            background: #e9ecef;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .settings-group {
+            background: white;
+            padding: 15px;
+            border-radius: var(--border-radius);
+        }
+
+        .settings-group h4 {
+            margin-bottom: 10px;
+            color: var(--secondary);
+        }
+
+        .color-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .color-option.active {
+            border-color: var(--dark);
+        }
+
+        /* Diğer stiller mevcut içeriğe bağlı olarak aynı kalacak */
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            color: var(--secondary);
+            margin: 25px 0 15px;
+        }
+
+        .upload-section {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+        }
+
+        .upload-area {
+            border: 3px dashed var(--primary);
+            border-radius: var(--border-radius);
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .upload-area:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+
+        .upload-area i {
+            font-size: 4rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border-radius: var(--border-radius);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 5px;
+        }
+
+        .btn i {
+            margin-right: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .reader-container {
+            margin: 30px auto;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+        }
+
+        .reader-display {
+            font-size: 2.2rem;
+            font-weight: bold;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            color: var(--dark);
+            padding: 20px;
+            overflow: hidden;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .reader-controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            min-width: 150px;
+        }
+
+        .control-group label {
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .control-group input, .control-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .reader-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        #pdf-preview {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+        }
+
+        #pdf-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin: 15px 0;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .instructions {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin: 20px 0;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .page-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .page-info {
+            background-color: var(--primary);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .reader-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .reader-buttons {
+                flex-wrap: wrap;
+            }
+            
+            .upload-area {
+                padding: 20px;
+            }
+            
+            .upload-area i {
+                font-size: 3rem;
+            }
+            
+            .page-selector {
+                flex-direction: column;
+            }
+            
+            .stats-panel {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .user-info {
+                position: static;
+                justify-content: flex-end;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Giriş/Kayıt Modal -->
+    <div class="auth-modal" id="auth-modal">
+        <div class="auth-container">
+            <span class="close-auth" id="close-auth">&times;</span>
+            
+            <div class="auth-tabs">
+                <div class="auth-tab active" data-tab="login">Giriş Yap</div>
+                <div class="auth-tab" data-tab="register">Hesap Oluştur</div>
+            </div>
+            
+            <div class="auth-form active" id="login-form">
+                <div class="form-group">
+                    <label for="login-email">E-posta</label>
+                    <input type="email" id="login-email" placeholder="E-posta adresiniz">
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password">Şifre</label>
+                    <input type="password" id="login-password" placeholder="Şifreniz">
+                </div>
+                
+                <button class="auth-btn" id="login-btn">Giriş Yap</button>
+                
+                <div class="auth-footer">
+                    Hesabınız yok mu? <a id="go-to-register">Kayıt Ol</a>
+                </div>
+            </div>
+            
+            <div class="auth-form" id="register-form">
+                <div class="form-group">
+                    <label for="register-name">Ad Soyad</label>
+                    <input type="text" id="register-name" placeholder="Adınız ve soyadınız">
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-email">E-posta</label>
+                    <input type="email" id="register-email" placeholder="E-posta adresiniz">
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-password">Şifre</label>
+                    <input type="password" id="register-password" placeholder="Şifreniz (en az 6 karakter)">
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-password-confirm">Şifre Tekrar</label>
+                    <input type="password" id="register-password-confirm" placeholder="Şifrenizi tekrar girin">
+                </div>
+                
+                <button class="auth-btn" id="register-btn">Hesap Oluştur</button>
+                
+                <div class="auth-footer">
+                    Zaten hesabınız var mı? <a id="go-to-login">Giriş Yap</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Kullanıcı Bilgi Alanı -->
+        <div class="user-info" id="user-info" style="display: none;">
+            <div class="user-avatar" id="user-avatar">K</div>
+            <div class="user-menu" id="user-menu">
+                <div class="user-menu-item" id="profile-btn">Profil</div>
+                <div class="user-menu-item" id="settings-btn">Ayarlar</div>
+                <div class="user-menu-item" id="logout-btn">Çıkış Yap</div>
+            </div>
+        </div>
+
+        <header>
+            <div class="logo">
+                <i class="fas fa-book-reader"></i>
+            </div>
+            <h1>HızlıOkuma - Sorunsuz PDF Okuma</h1>
+            <button class="btn btn-info" id="toggle-settings">
+                <i class="fas fa-cog"></i> Gelişmiş Ayarlar
+            </button>
+            <button class="btn btn-primary" id="show-login" style="display: none;">
+                <i class="fas fa-sign-in-alt"></i> Giriş Yap
+            </button>
+        </header>
+
+        <!-- İlerleme İstatistikleri -->
+        <div class="stats-panel">
+            <div class="stat-item">
+                <div class="stat-value" id="words-read">0</div>
+                <div class="stat-label">Okunan Kelime</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="reading-time">0</div>
+                <div class="stat-label">Okuma Süresi (dk)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avg-speed">0</div>
+                <div class="stat-label">Ortalama Hız (kelime/dk)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="completion">0%</div>
+                <div class="stat-label">Tamamlanma</div>
+            </div>
+        </div>
+
+        <!-- Gelişmiş Ayarlar Paneli -->
+        <div class="advanced-settings" id="advanced-settings">
+            <div class="settings-header">
+                <h3>Gelişmiş Ayarlar</h3>
+                <button class="btn btn-secondary" id="close-settings">
+                    <i class="fas fa-times"></i> Kapat
+                </button>
+            </div>
+            
+            <div class="settings-grid">
+                <div class="settings-group">
+                    <h4>Görünüm Ayarları</h4>
+                    <div class="form-group">
+                        <label for="font-family">Yazı Tipi:</label>
+                        <select id="font-family">
+                            <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Standart</option>
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                            <option value="'Open Dyslexic', sans-serif">OpenDyslexic</option>
+                            <option value="Georgia, serif">Georgia</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="line-height">Satır Aralığı:</label>
+                        <select id="line-height">
+                            <option value="1.5">Normal</option>
+                            <option value="1.8">Geniş</option>
+                            <option value="2.0">Çok Geniş</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <h4>Renk Teması</h4>
+                    <p>Arkaplan ve metin rengi:</p>
+                    <div class="color-options">
+                        <div class="color-option active" style="background-color: #f8f9fa; border: 1px solid #ddd;" data-bg="#f8f9fa" data-text="#212529"></div>
+                        <div class="color-option" style="background-color: #fff8e1;" data-bg="#fff8e1" data-text="#5d4037"></div>
+                        <div class="color-option" style="background-color: #e8f5e9;" data-bg="#e8f5e9" data-text="#1b5e20"></div>
+                        <div class="color-option" style="background-color: #e3f2fd;" data-bg="#e3f2fd" data-text="#0d47a1"></div>
+                        <div class="color-option" style="background-color: #212529; border: 1px solid #444;" data-bg="#212529" data-text="#f8f9fa"></div>
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <h4>Okuma Modları</h4>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="focus-mode"> Odaklanma Modu
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="auto-scroll"> Otomatik Kaydırma
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="text-highlight"> Metin Vurgulama
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="reader-buttons">
+                <button class="btn btn-primary" id="save-settings">
+                    <i class="fas fa-save"></i> Ayarları Kaydet
+                </button>
+                <button class="btn btn-secondary" id="reset-settings">
+                    <i class="fas fa-undo"></i> Varsayılanlara Sıfırla
+                </button>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h2>Nasıl Kullanılır?</h2>
+            <ol>
+                <li>Aşağıdaki "PDF Yükle" butonuna tıklayın veya PDF dosyanızı sürükleyip bırakın</li>
+                <li>Yüklenen metni kontrol edin (gerçek PDF içeriğiniz görünecek)</li>
+                <li>Okuma hızını ve modunu ayarlayın</li>
+                <li>Sayfa seçimi yapabilir veya tamamını okuyabilirsiniz</li>
+                <li>"Başlat" butonuna tıklayın ve okumaya başlayın</li>
+            </ol>
+        </div>
+
+        <section class="upload-section">
+            <h2>PDF Yükle</h2>
+            <div class="upload-area" id="upload-area">
+                <i class="fas fa-file-upload"></i>
+                <h3>PDF Dosyası Yükle</h3>
+                <p>Dosyanızı sürükleyip bırakın veya tıklayarak seçin</p>
+                <input type="file" id="file-input" accept=".pdf,.txt" style="display: none;">
+                <p class="upload-status" id="upload-status">Dosya seçilmedi</p>
+                <button class="btn btn-primary" id="upload-btn">
+                    <i class="fas fa-file"></i> PDF Yükle
+                </button>
+            </div>
+            <div class="progress-bar">
+                <div class="progress" id="progress-bar"></div>
+            </div>
+            <div id="pdf-preview" style="display: none;">
+                <h3>PDF Önizleme <i class="fas fa-check-circle" style="color: green;"></i></h3>
+                <div class="page-selector">
+                    <button class="btn btn-secondary" id="select-all-pages">
+                        <i class="fas fa-file-alt"></i> Tüm Sayfaları Seç
+                    </button>
+                    <span class="page-info">Toplam Sayfa: <span id="total-pages">0</span></span>
+                    <div class="control-group">
+                        <label for="page-range">Sayfa Aralığı:</label>
+                        <input type="text" id="page-range" placeholder="1-3,5,7-9">
+                    </div>
+                    <button class="btn btn-primary" id="apply-pages">
+                        <i class="fas fa-check"></i> Uygula
+                    </button>
+                </div>
+                <div id="pdf-content"></div>
+            </div>
+        </section>
+
+        <section class="demo">
+            <h2>Hızlı Okuma</h2>
+            <div class="reader-container">
+                <div class="reader-display">
+                    <span id="word-display">PDF yükleyin ve okumaya başlayın...</span>
+                </div>
+                <div class="reader-controls">
+                    <div class="control-group">
+                        <label for="speed">Hız (kelime/dk):</label>
+                        <input type="number" id="speed" value="250" min="60" max="1000">
+                    </div>
+                    <div class="control-group">
+                        <label for="mode">Mod:</label>
+                        <select id="mode">
+                            <option value="word">Kelime Kelime</option>
+                            <option value="sentence">Cümle Cümle</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="font-size">Yazı Boyutu:</label>
+                        <select id="font-size">
+                            <option value="1.8">Küçük</option>
+                            <option value="2.2" selected>Orta</option>
+                            <option value="2.6">Büyük</option>
+                            <option value="3">Çok Büyük</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="reader-buttons">
+                    <button class="btn btn-primary" id="prev-btn"><i class="fas fa-backward"></i> Geri</button>
+                    <button class="btn btn-success" id="start-stop-btn"><i class="fas fa-play"></i> Başlat</button>
+                    <button class="btn btn-primary" id="next-btn">İleri <i class="fas fa-forward"></i></button>
+                    <button class="btn btn-warning" id="reset-btn"><i class="fas fa-redo"></i> Sıfırla</button>
+                </div>
+            </div>
+        </section>
+
+        <div id="alert-area"></div>
+    </div>
+
+    <script>
+        // Değişkenler
+        let extractedText = "";
+        let words = [];
+        let sentences = [];
+        let currentIndex = 0;
+        let isPlaying = false;
+        let interval;
+        let totalPages = 0;
+        let selectedPages = [];
+        let startTime = 0;
+        let wordsRead = 0;
+        let totalReadingTime = 0;
+        let currentUser = null;
+
+        // DOM Elementleri
+        const wordDisplay = document.getElementById('word-display');
+        const startStopBtn = document.getElementById('start-stop-btn');
+        const speedInput = document.getElementById('speed');
+        const modeSelect = document.getElementById('mode');
+        const fontSizeSelect = document.getElementById('font-size');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        const uploadStatus = document.getElementById('upload-status');
+        const pdfPreview = document.getElementById('pdf-preview');
+        const pdfContent = document.getElementById('pdf-content');
+        const alertArea = document.getElementById('alert-area');
+        const progressBar = document.getElementById('progress-bar');
+        const totalPagesSpan = document.getElementById('total-pages');
+        const pageRangeInput = document.getElementById('page-range');
+        const applyPagesBtn = document.getElementById('apply-pages');
+        const selectAllPagesBtn = document.getElementById('select-all-pages');
+        
+        // Yeni eklenen elementler
+        const toggleSettingsBtn = document.getElementById('toggle-settings');
+        const advancedSettings = document.getElementById('advanced-settings');
+        const closeSettingsBtn = document.getElementById('close-settings');
+        const saveSettingsBtn = document.getElementById('save-settings');
+        const resetSettingsBtn = document.getElementById('reset-settings');
+        const fontFamilySelect = document.getElementById('font-family');
+        const lineHeightSelect = document.getElementById('line-height');
+        const focusModeCheckbox = document.getElementById('focus-mode');
+        const autoScrollCheckbox = document.getElementById('auto-scroll');
+        const textHighlightCheckbox = document.getElementById('text-highlight');
+        const colorOptions = document.querySelectorAll('.color-option');
+        const wordsReadEl = document.getElementById('words-read');
+        const readingTimeEl = document.getElementById('reading-time');
+        const avgSpeedEl = document.getElementById('avg-speed');
+        const completionEl = document.getElementById('completion');
+
+        // Kimlik Doğrulama Elementleri
+        const authModal = document.getElementById('auth-modal');
+        const closeAuth = document.getElementById('close-auth');
+        const authTabs = document.querySelectorAll('.auth-tab');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
+        const goToRegister = document.getElementById('go-to-register');
+        const goToLogin = document.getElementById('go-to-login');
+        const showLoginBtn = document.getElementById('show-login');
+        const userInfo = document.getElementById('user-info');
+        const userAvatar = document.getElementById('user-avatar');
+        const userMenu = document.getElementById('user-menu');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // Kullanıcı Yönetimi Fonksiyonları
+        function initializeAuth() {
+            // LocalStorage'dan kullanıcı bilgilerini yükle
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                updateUIForLoggedInUser();
+                hideAuthModal();
+            } else {
+                showLoginBtn.style.display = 'inline-flex';
+                showAuthModal();
+            }
+            
+            // Kullanıcı veritabanını kontrol et, yoksa oluştur
+            if (!localStorage.getItem('users')) {
+                localStorage.setItem('users', JSON.stringify([]));
+            }
+        }
+
+        function registerUser(name, email, password) {
+            const users = JSON.parse(localStorage.getItem('users'));
+            
+            // E-posta kontrolü
+            if (users.some(user => user.email === email)) {
+                showAlert('error', 'Bu e-posta adresi zaten kayıtlı.');
+                return false;
+            }
+            
+            // Yeni kullanıcı oluştur
+            const newUser = {
+                id: Date.now().toString(),
+                name,
+                email,
+                password, // Gerçek uygulamada şifre hash'lenmeli
+                preferences: {
+                    speed: 250,
+                    mode: 'word',
+                    fontSize: '2.2'
+                },
+                createdAt: new Date().toISOString()
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            // Otomatik giriş yap
+            loginUser(email, password);
+            return true;
+        }
+
+        function loginUser(email, password) {
+            const users = JSON.parse(localStorage.getItem('users'));
+            const user = users.find(u => u.email === email && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                updateUIForLoggedInUser();
+                hideAuthModal();
+                showAlert('success', `Hoş geldiniz, ${user.name}!`);
+                
+                // Kullanıcı tercihlerini yükle
+                loadUserPreferences();
+                return true;
+            } else {
+                showAlert('error', 'E-posta veya şifre hatalı.');
+                return false;
+            }
+        }
+
+        function logoutUser() {
+            // Kullanıcı tercihlerini kaydet
+            saveUserPreferences();
+            
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            updateUIForLoggedOutUser();
+            showAlert('success', 'Başarıyla çıkış yaptınız.');
+            showAuthModal();
+        }
+
+        function updateUIForLoggedInUser() {
+            showLoginBtn.style.display = 'none';
+            userInfo.style.display = 'flex';
+            userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
+        }
+
+        function updateUIForLoggedOutUser() {
+            showLoginBtn.style.display = 'inline-flex';
+            userInfo.style.display = 'none';
+        }
+
+        function showAuthModal() {
+            authModal.style.display = 'flex';
+        }
+
+        function hideAuthModal() {
+            authModal.style.display = 'none';
+        }
+
+        // İstatistikleri güncelleme
+        function updateStats() {
+            wordsReadEl.textContent = wordsRead;
+            readingTimeEl.textContent = (totalReadingTime / 60).toFixed(1);
+            
+            if (totalReadingTime > 0) {
+                const avgSpeed = Math.round((wordsRead / totalReadingTime) * 60);
+                avgSpeedEl.textContent = avgSpeed;
+            }
+            
+            if (words.length > 0) {
+                const completion = Math.round((wordsRead / words.length) * 100);
+                completionEl.textContent = `${completion}%`;
+            }
+        }
+
+        // Gelişmiş ayarları yükleme
+        function loadUserPreferences() {
+            if (!currentUser || !currentUser.preferences) return;
+            
+            speedInput.value = currentUser.preferences.speed || 250;
+            modeSelect.value = currentUser.preferences.mode || 'word';
+            fontSizeSelect.value = currentUser.preferences.fontSize || '2.2';
+            
+            // Yazı boyutunu güncelle
+            wordDisplay.style.fontSize = fontSizeSelect.value + 'rem';
+            
+            // Diğer ayarları yükle
+            const settings = JSON.parse(localStorage.getItem('readingSettings')) || {};
+            
+            if (settings.fontFamily) {
+                fontFamilySelect.value = settings.fontFamily;
+                document.body.style.fontFamily = settings.fontFamily;
+            }
+            
+            if (settings.lineHeight) {
+                lineHeightSelect.value = settings.lineHeight;
+                document.body.style.lineHeight = settings.lineHeight;
+            }
+            
+            if (settings.focusMode !== undefined) {
+                focusModeCheckbox.checked = settings.focusMode;
+                toggleFocusMode(settings.focusMode);
+            }
+            
+            if (settings.autoScroll !== undefined) {
+                autoScrollCheckbox.checked = settings.autoScroll;
+            }
+            
+            if (settings.textHighlight !== undefined) {
+                textHighlightCheckbox.checked = settings.textHighlight;
+            }
+            
+            if (settings.backgroundColor && settings.textColor) {
+                wordDisplay.style.backgroundColor = settings.backgroundColor;
+                wordDisplay.style.color = settings.textColor;
+                
+                // Aktif renk seçeneğini güncelle
+                colorOptions.forEach(option => {
+                    if (option.getAttribute('data-bg') === settings.backgroundColor && 
+                        option.getAttribute('data-text') === settings.textColor) {
+                        option.classList.add('active');
+                    } else {
+                        option.classList.remove('active');
+                    }
+                });
+            }
+        }
+
+        function saveUserPreferences() {
+            if (!currentUser) return;
+            
+            const users = JSON.parse(localStorage.getItem('users'));
+            const userIndex = users.findIndex(u => u.id === currentUser.id);
+            
+            if (userIndex !== -1) {
+                users[userIndex].preferences = {
+                    speed: speedInput.value,
+                    mode: modeSelect.value,
+                    fontSize: fontSizeSelect.value
+                };
+                
+                localStorage.setItem('users', JSON.stringify(users));
+                localStorage.setItem('currentUser', JSON.stringify(users[userIndex]));
+                currentUser = users[userIndex];
+            }
+        }
+
+        // Odaklanma modunu aç/kapa
+        function toggleFocusMode(enable) {
+            if (enable) {
+                document.body.style.overflow = 'hidden';
+                const elements = document.querySelectorAll('body > *:not(.reader-display):not(.reader-controls):not(.reader-buttons)');
+                elements.forEach(el => {
+                    if (!el.closest('.reader-container')) {
+                        el.style.opacity = '0.3';
+                        el.style.transition = 'opacity 0.3s ease';
+                    }
+                });
+            } else {
+                document.body.style.overflow = 'auto';
+                const elements = document.querySelectorAll('body > *');
+                elements.forEach(el => {
+                    el.style.opacity = '1';
+                });
+            }
+        }
+
+        // Renk teması uygula
+        function applyColorTheme(bgColor, textColor) {
+            wordDisplay.style.backgroundColor = bgColor;
+            wordDisplay.style.color = textColor;
+        }
+
+        // Ayarları kaydet
+        function saveSettings() {
+            const settings = {
+                fontFamily: fontFamilySelect.value,
+                lineHeight: lineHeightSelect.value,
+                focusMode: focusModeCheckbox.checked,
+                autoScroll: autoScrollCheckbox.checked,
+                textHighlight: textHighlightCheckbox.checked,
+                backgroundColor: wordDisplay.style.backgroundColor,
+                textColor: wordDisplay.style.color
+            };
+            
+            localStorage.setItem('readingSettings', JSON.stringify(settings));
+            showAlert('success', 'Ayarlar kaydedildi!');
+        }
+
+        // Varsayılan ayarlara sıfırla
+        function resetSettings() {
+            localStorage.removeItem('readingSettings');
+            fontFamilySelect.value = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+            lineHeightSelect.value = "1.5";
+            focusModeCheckbox.checked = false;
+            autoScrollCheckbox.checked = false;
+            textHighlightCheckbox.checked = false;
+            
+            wordDisplay.style.backgroundColor = "#f8f9fa";
+            wordDisplay.style.color = "#212529";
+            
+            document.body.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+            document.body.style.lineHeight = "1.6";
+            
+            // Aktif renk seçeneğini güncelle
+            colorOptions.forEach(option => {
+                if (option.getAttribute('data-bg') === "#f8f9fa" && 
+                    option.getAttribute('data-text') === "#212529") {
+                    option.classList.add('active');
+                } else {
+                    option.classList.remove('active');
+                }
+            });
+            
+            toggleFocusMode(false);
+            showAlert('success', 'Ayarlar varsayılana sıfırlandı!');
+        }
+
+        // Event Listeners for new features
+        toggleSettingsBtn.addEventListener('click', () => {
+            advancedSettings.style.display = 'block';
+        });
+
+        closeSettingsBtn.addEventListener('click', () => {
+            advancedSettings.style.display = 'none';
+        });
+
+        saveSettingsBtn.addEventListener('click', saveSettings);
+        resetSettingsBtn.addEventListener('click', resetSettings);
+
+        fontFamilySelect.addEventListener('change', () => {
+            document.body.style.fontFamily = fontFamilySelect.value;
+        });
+
+        lineHeightSelect.addEventListener('change', () => {
+            document.body.style.lineHeight = lineHeightSelect.value;
+        });
+
+        focusModeCheckbox.addEventListener('change', (e) => {
+            toggleFocusMode(e.target.checked);
+        });
+
+        colorOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                colorOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                const bgColor = option.getAttribute('data-bg');
+                const textColor = option.getAttribute('data-text');
+                applyColorTheme(bgColor, textColor);
+            });
+        });
+
+        // Kimlik Doğrulama Event Listeners
+        showLoginBtn.addEventListener('click', showAuthModal);
+        closeAuth.addEventListener('click', hideAuthModal);
+
+        authTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                authTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                loginForm.classList.remove('active');
+                registerForm.classList.remove('active');
+                
+                if (tabId === 'login') {
+                    loginForm.classList.add('active');
+                } else {
+                    registerForm.classList.add('active');
+                }
+            });
+        });
+
+        goToRegister.addEventListener('click', () => {
+            authTabs.forEach(t => t.classList.remove('active'));
+            document.querySelector('[data-tab="register"]').classList.add('active');
+            loginForm.classList.remove('active');
+            registerForm.classList.add('active');
+        });
+
+        goToLogin.addEventListener('click', () => {
+            authTabs.forEach(t => t.classList.remove('active'));
+            document.querySelector('[data-tab="login"]').classList.add('active');
+            registerForm.classList.remove('active');
+            loginForm.classList.add('active');
+        });
+
+        loginBtn.addEventListener('click', () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (!email || !password) {
+                showAlert('error', 'Lütfen tüm alanları doldurun.');
+                return;
+            }
+            
+            loginUser(email, password);
+        });
+
+        registerBtn.addEventListener('click', () => {
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const passwordConfirm = document.getElementById('register-password-confirm').value;
+            
+            if (!name || !email || !password || !passwordConfirm) {
+                showAlert('error', 'Lütfen tüm alanları doldurun.');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showAlert('error', 'Şifre en az 6 karakter olmalıdır.');
+                return;
+            }
+            
+            if (password !== passwordConfirm) {
+                showAlert('error', 'Şifreler eşleşmiyor.');
+                return;
+            }
+            
+            registerUser(name, email, password);
+        });
+
+        userAvatar.addEventListener('click', () => {
+            userMenu.classList.toggle('active');
+        });
+
+        logoutBtn.addEventListener('click', logoutUser);
+
+        // Dışarı tıklandığında menüyü kapat
+        document.addEventListener('click', (e) => {
+            if (!userAvatar.contains(e.target) && !userMenu.contains(e.target)) {
+                userMenu.classList.remove('active');
+            }
+        });
+
+        // Kullanıcı tercihleri değiştiğinde kaydet
+        speedInput.addEventListener('change', saveUserPreferences);
+        modeSelect.addEventListener('change', saveUserPreferences);
+        fontSizeSelect.addEventListener('change', () => {
+            wordDisplay.style.fontSize = fontSizeSelect.value + 'rem';
+            saveUserPreferences;
+        });
+
+        // Dosya yükleme işlemleri
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
+            uploadArea.style.borderColor = '#3a0ca3';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.backgroundColor = '';
+            uploadArea.style.borderColor = '#4361ee';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '';
+            uploadArea.style.borderColor = '#4361ee';
+            
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                handleFile(fileInput.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            // Dosya tipi kontrolü
+            const validFileTypes = ['application/pdf', 'text/plain'];
+            
+            if (!validFileTypes.includes(file.type) && !file.name.endsWith('.pdf') && !file.name.endsWith('.txt')) {
+                showAlert('error', 'Lütfen PDF veya TXT dosyası seçin.');
+                uploadStatus.textContent = 'Geçersiz dosya formatı';
+                uploadStatus.style.color = 'red';
+                return;
+            }
+
+            uploadStatus.textContent = `Yüklenen dosya: ${file.name}`;
+            uploadStatus.style.color = 'green';
+            
+            // Dosya içeriğini okuma
+            readFileContent(file);
+        }
+
+        function readFileContent(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+                    // TXT dosyası
+                    extractedText = e.target.result;
+                    processExtractedText(extractedText);
+                } else {
+                    // PDF dosyası
+                    extractTextFromPDF(e.target.result);
+                }
+            };
+            
+            reader.onerror = function() {
+                showAlert('error', 'Dosya okunurken hata oluştu.');
+                uploadStatus.textContent = 'Dosya okuma hatası';
+                uploadStatus.style.color = 'red';
+            };
+            
+            if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+                reader.readAsText(file);
+            } else {
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        async function extractTextFromPDF(data) {
+            uploadStatus.textContent = 'PDF işleniyor...';
+            
+            try {
+                // PDF.js ile PDF'i yükle
+                const pdf = await pdfjsLib.getDocument({ data }).promise;
+                let fullText = '';
+                totalPages = pdf.numPages;
+                totalPagesSpan.textContent = totalPages;
+                
+                // Tüm sayfaları seç
+                selectedPages = Array.from({length: totalPages}, (_, i) => i + 1);
+                pageRangeInput.value = `1-${totalPages}`;
+                
+                // İlerleme çubuğunu güncelleme
+                progressBar.style.width = '0%';
+                
+                // Tüm sayfaları işle
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    
+                    // Metni doğru şekilde birleştir
+                    let pageText = '';
+                    
+                    // Daha iyi metin çıkarma için öğeleri birleştir
+                    let lastY, lastX, lastFontSize;
+                    
+                    for (const item of textContent.items) {
+                        const y = item.transform[5];
+                        const x = item.transform[4];
+                        const fontSize = item.transform[0];
+                        
+                        // Eğer yeni bir satıra geçilmişse, yeni satır ekle
+                        if (lastY !== undefined && lastY !== y) {
+                            pageText += '\n';
+                        } 
+                        // Aynı satırda, ancak x koordinatına göre boşluk ekle
+                        else if (lastX !== undefined) {
+                            const spaceWidth = (x - (lastX + (lastFontSize * 0.5))) / fontSize;
+                            if (spaceWidth > 0.3) {
+                                pageText += ' ';
+                            }
+                        }
+                        
+                        pageText += item.str;
+                        
+                        lastY = y;
+                        lastX = x + (item.str.length * fontSize * 0.5);
+                        lastFontSize = fontSize;
+                    }
+                    
+                    fullText += pageText + '\n\n';
+                    
+                    // İlerleme çubuğunu güncelle
+                    progressBar.style.width = `${(i / pdf.numPages) * 100}%`;
+                }
+                
+                processExtractedText(fullText);
+                uploadStatus.textContent = 'PDF başarıyla işlendi!';
+                uploadStatus.style.color = 'green';
+                showAlert('success', `PDF dosyası başarıyla yüklendi ve işlendi.`);
+            } catch (error) {
+                console.error('PDF işleme hatası:', error);
+                showAlert('error', 'PDF işlenirken bir hata oluştu.');
+                uploadStatus.textContent = 'PDF işleme hatası';
+                uploadStatus.style.color = 'red';
+            }
+        }
+
+        function processExtractedText(text) {
+            // Metni işle ve göster
+            extractedText = text;
+            
+            // Kelimeleri düzgünce ayır
+            words = extractedText.split(/\s+/).filter(word => word.length > 0);
+            
+            // Cümleleri ayır
+            sentences = extractedText.split(/(?<=[.!?])\s+/).filter(sentence => sentence.length > 0);
+            
+            currentIndex = 0;
+            wordsRead = 0;
+            totalReadingTime = 0;
+            updateStats();
+            
+            // Önizleme göster (ilk 500 kelime)
+            const previewText = words.slice(0, 500).join(' ');
+            pdfContent.textContent = previewText + (words.length > 500 ? '...' : '');
+            pdfPreview.style.display = 'block';
+            
+            // Okumayı sıfırla ve yeni metni göster
+            stopReading();
+            wordDisplay.textContent = "Dosya yüklendi. Okumaya başlamak için 'Başlat' butonuna tıklayın.";
+            
+            showAlert('success', 'Metin başarıyla yüklendi. Şimdi okumaya başlayabilirsiniz.');
+        }
+
+        // Sayfa seçim işlevleri
+        applyPagesBtn.addEventListener('click', () => {
+            if (totalPages === 0) {
+                showAlert('error', 'Önce bir PDF yükleyin.');
+                return;
+            }
+            
+            const rangeText = pageRangeInput.value.trim();
+            if (!rangeText) {
+                showAlert('error', 'Lütfen bir sayfa aralığı girin.');
+                return;
+            }
+            
+            try {
+                selectedPages = parsePageRange(rangeText, totalPages);
+                if (selectedPages.length === 0) {
+                    showAlert('error', 'Geçerli bir sayfa aralığı girin.');
+                    return;
+                }
+                
+                // Seçilen sayfaları tekrar işle
+                reExtractSelectedPages();
+                showAlert('success', `Sayfa aralığı uygulandı: ${rangeText}`);
+            } catch (error) {
+                showAlert('error', 'Sayfa aralığı işlenirken hata oluştu: ' + error.message);
+            }
+        });
+
+        selectAllPagesBtn.addEventListener('click', () => {
+            if (totalPages === 0) {
+                showAlert('error', 'Önce bir PDF yükleyin.');
+                return;
+            }
+            
+            selectedPages = Array.from({length: totalPages}, (_, i) => i + 1);
+            pageRangeInput.value = `1-${totalPages}`;
+            reExtractSelectedPages();
+            showAlert('success', 'Tüm sayfalar seçildi.');
+        });
+
+        function parsePageRange(rangeText, maxPage) {
+            const pages = new Set();
+            const parts = rangeText.split(',');
+            
+            for (const part of parts) {
+                const trimmed = part.trim();
+                if (trimmed.includes('-')) {
+                    // Aralık işleme (örn: 1-5)
+                    const [start, end] = trimmed.split('-').map(num => parseInt(num.trim()));
+                    
+                    if (isNaN(start) || isNaN(end) || start < 1 || end > maxPage || start > end) {
+                        throw new Error(`Geçersiz aralık: ${trimmed}`);
+                    }
+                    
+                    for (let i = start; i <= end; i++) {
+                        pages.add(i);
+                    }
+                } else {
+                    // Tek sayfa işleme (örn: 3)
+                    const pageNum = parseInt(trimmed);
+                    
+                    if (isNaN(pageNum) || pageNum < 1 || pageNum > maxPage) {
+                        throw new Error(`Geçersiz sayfa numarası: ${trimmed}`);
+                    }
+                    
+                    pages.add(pageNum);
+                }
+            }
+            
+            return Array.from(pages).sort((a, b) => a - b);
+        }
+
+        async function reExtractSelectedPages() {
+            if (!fileInput.files.length) return;
+            
+            const file = fileInput.files[0];
+            if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+                return; // Sadece PDF'ler için
+            }
+            
+            uploadStatus.textContent = 'Seçilen sayfalar işleniyor...';
+            
+            try {
+                const data = await readFileAsArrayBuffer(file);
+                const pdf = await pdfjsLib.getDocument({ data }).promise;
+                let fullText = '';
+                
+                // İlerleme çubuğunu sıfırla
+                progressBar.style.width = '0%';
+                
+                // Seçilen sayfaları işle
+                for (let i = 0; i < selectedPages.length; i++) {
+                    const pageNum = selectedPages[i];
+                    const page = await pdf.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+                    
+                    // Metni doğru şekilde birleştir
+                    let pageText = '';
+                    let lastY, lastX, lastFontSize;
+                    
+                    for (const item of textContent.items) {
+                        const y = item.transform[5];
+                        const x = item.transform[4];
+                        const fontSize = item.transform[0];
+                        
+                        if (lastY !== undefined && lastY !== y) {
+                            pageText += '\n';
+                        } else if (lastX !== undefined) {
+                            const spaceWidth = (x - (lastX + (lastFontSize * 0.5))) / fontSize;
+                            if (spaceWidth > 0.3) {
+                                pageText += ' ';
+                            }
+                        }
+                        
+                        pageText += item.str;
+                        
+                        lastY = y;
+                        lastX = x + (item.str.length * fontSize * 0.5);
+                        lastFontSize = fontSize;
+                    }
+                    
+                    fullText += pageText + '\n\n';
+                    
+                    // İlerleme çubuğunu güncelle
+                    progressBar.style.width = `${((i + 1) / selectedPages.length) * 100}%`;
+                }
+                
+                processExtractedText(fullText);
+                uploadStatus.textContent = 'Seçilen sayfalar işlendi!';
+                uploadStatus.style.color = 'green';
+            } catch (error) {
+                console.error('Sayfa işleme hatası:', error);
+                showAlert('error', 'Sayfalar işlenirken bir hata oluştu.');
+                uploadStatus.textContent = 'Sayfa işleme hatası';
+                uploadStatus.style.color = 'red';
+            }
+        }
+
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = e => reject(e);
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Hızlı okuma işlevselliği
+        function startReading() {
+            if (words.length === 0) {
+                showAlert('error', 'Okunacak metin yok. Lütfen önce bir dosya yükleyin.');
+                return;
+            }
+            
+            if (currentIndex >= words.length) {
+                currentIndex = 0;
+            }
+            
+            const wordsPerMinute = speedInput.value;
+            const delay = 60000 / wordsPerMinute; // ms per word
+            
+            // Zamanlayıcıyı başlat
+            startTime = Date.now();
+            
+            interval = setInterval(() => {
+                if (modeSelect.value === 'word') {
+                    wordDisplay.textContent = words[currentIndex];
+                    currentIndex++;
+                    wordsRead++;
+                } else {
+                    // Cümle modu
+                    if (currentIndex < sentences.length) {
+                        wordDisplay.textContent = sentences[currentIndex];
+                        currentIndex++;
+                        wordsRead += sentences[currentIndex-1].split(/\s+/).length;
+                    }
+                }
+                
+                // İstatistikleri güncelle
+                const elapsedTime = (Date.now() - startTime) / 1000; // saniye
+                totalReadingTime += elapsedTime;
+                startTime = Date.now();
+                updateStats();
+                
+                if ((modeSelect.value === 'word' && currentIndex >= words.length) || 
+                    (modeSelect.value === 'sentence' && currentIndex >= sentences.length)) {
+                    stopReading();
+                    wordDisplay.textContent = "Okuma tamamlandı!";
+                }
+            }, delay);
+            
+            startStopBtn.innerHTML = '<i class="fas fa-pause"></i> Durdur';
+            isPlaying = true;
+        }
+
+        function stopReading() {
+            clearInterval(interval);
+            startStopBtn.innerHTML = '<i class="fas fa-play"></i> Başlat';
+            isPlaying = false;
+            
+            // Okuma süresini güncelle
+            if (startTime > 0) {
+                const elapsedTime = (Date.now() - startTime) / 1000;
+                totalReadingTime += elapsedTime;
+                startTime = 0;
+                updateStats();
+            }
+        }
+
+        startStopBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                stopReading();
+            } else {
+                startReading();
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            stopReading();
+            if (modeSelect.value === 'word') {
+                if (currentIndex > 0) {
+                    currentIndex = Math.max(0, currentIndex - 2);
+                    wordDisplay.textContent = words[currentIndex];
+                }
+            } else {
+                if (currentIndex > 0) {
+                    currentIndex = Math.max(0, currentIndex - 2);
+                    wordDisplay.textContent = sentences[currentIndex];
+                }
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            stopReading();
+            if (modeSelect.value === 'word') {
+                if (currentIndex < words.length - 1) {
+                    wordDisplay.textContent = words[currentIndex];
+                    currentIndex++;
+                }
+            } else {
+                if (currentIndex < sentences.length - 1) {
+                    wordDisplay.textContent = sentences[currentIndex];
+                    currentIndex++;
+                }
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            stopReading();
+            currentIndex = 0;
+            wordsRead = 0;
+            totalReadingTime = 0;
+            updateStats();
+            wordDisplay.textContent = "Okumaya başlamak için 'Başlat' butonuna tıklayın.";
+        });
+
+        fontSizeSelect.addEventListener('change', () => {
+            wordDisplay.style.fontSize = fontSizeSelect.value + 'rem';
+        });
+
+        // Alert gösterme fonksiyonu
+        function showAlert(type, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            
+            alertArea.appendChild(alertDiv);
+            
+            // Alert'i 5 saniye sonra kaldır
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Sayfa yüklendiğinde
+        window.addEventListener('load', () => {
+            initializeAuth();
+            loadUserPreferences();
+            showAlert('success', 'Uygulama hazır. Lütfen bir PDF dosyası yükleyin.');
+        });
+    </script>
+</body>
+</html>
