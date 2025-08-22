@@ -1,1 +1,1 @@
-# h-zl-okuma
+# hızlıokuma
